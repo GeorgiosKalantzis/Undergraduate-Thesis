@@ -7,6 +7,8 @@ import re
 import math
 from collections import defaultdict
 from graph_partitions import *
+import matplotlib.pyplot as plt
+
 
 
 # Maximum Bipartite Matching for Mojo-Distance
@@ -51,129 +53,238 @@ class GFG:
         return result
 
 
-# Read partitions from graph_partitions.py
-partitionB = ppr_partition(400)
-partitionA = ground_truth_partition()
+def atoi(text):
+    return int(text) if text.isdigit() else text
+    
+def natural_keys(text):
+    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
 
 #----- Mojo Distance ---------
-n = len(partitionB)
-l = len(set(partitionA.values()))
-m = len(set(partitionB.values()))
 
-partitionAtags = defaultdict(list)
-tags = []
-
-
-for i in list(partitionA.keys()):
-    current = partitionA[i]
-    B = partitionB[i]
-    tag = [int(s) for s in B.split() if s.isdigit()]
-    tag = tag[0]
+def mojo_distance(partitionA,partitionB):
     
-    if(current != partitionA[i]):
-        tags = []
+    n = len(partitionB)
+    l = len(set(partitionA.values()))
+    m = len(set(partitionB.values()))
     
-    partitionAtags[partitionA[i]].append(tag)
-   
+    partitionAtags = defaultdict(list)
+    tags = []
     
-A = [[0]*(l+m) for _ in range(m+l)]
-maximums = []
-
-for i in list(partitionAtags.keys()):
-    tagA = [int(s) for s in i.split() if s.isdigit()]
-    tagA = tagA[0]
-    c = Counter(partitionAtags[i])
     
-    maximum = [x for x in c if c[x] == c.most_common(1)[0][1]]
-    maximums.append(partitionAtags[i].count(maximum[0]))
-    for j in maximum:
-        A[tagA-1][l+j-1] = 1
+    for i in list(partitionA.keys()):
+        current = partitionA[i]
+        B = partitionB[i]
+        tag = [int(s) for s in B.split() if s.isdigit()]
+        tag = tag[0]
+        
+        if(current != partitionA[i]):
+            tags = []
+        
+        partitionAtags[partitionA[i]].append(tag)
        
+        
+    A = [[0]*(l+m) for _ in range(m+l)]
+    maximums = []
     
+    for i in list(partitionAtags.keys()):
+        tagA = [int(s) for s in i.split() if s.isdigit()]
+        tagA = tagA[0]
+        c = Counter(partitionAtags[i])
+        
+        maximum = [x for x in c if c[x] == c.most_common(1)[0][1]]
+        maximums.append(partitionAtags[i].count(maximum[0]))
+        for j in maximum:
+            A[tagA-1][l+j-1] = 1
+ 
+    g = GFG(A)
+    g = g.maxBPM()
+    M = n - np.sum(maximums)
+    MojoDistance = M + l - g
+    
+    comsA = set(partitionA.values())
+    comsB = set(partitionB.values())
+    
+    
+    comsA = list(set(partitionA.values()))
+    comsB = list(set(partitionB.values()))
+    
+    comsA.sort(key=natural_keys)
+    comsB.sort(key=natural_keys)
+    
+    Adict = {k: [] for k in comsA}
+    Bdict = {k: [] for k in comsB}
+    
+    for i in list(partitionA.keys()):
+        Adict[partitionA[i]].append(i)
+    
+    for i in list(partitionB.keys()):
+        Bdict[partitionB[i]].append(i)
         
     
-g = GFG(A)
-g = g.maxBPM()
-M = n - np.sum(maximums)
-MojoDistance = M + l - g
-# Normalization
-MJ = 1 - MojoDistance/n
+        
+    A_sorted_list = sorted(Adict.items(), key= lambda value: len(value[1]))
+        
+    A_sorted_dict = dict(A_sorted_list)
+    
+    G = 0
+    for i in list(A_sorted_dict.keys()):
+        if len(A_sorted_dict[i]) > G:
+            G = G + 1
+    
+    MJ = 1 - MojoDistance/(n-G)
+    
+    return MJ
 
+#--------- Jaccard -------------------
+def jaccard_similarity(partitionA,partitionB):
+    
+    
+    comsA = set(partitionA.values())
+    comsB = set(partitionB.values())
+    
+    
+    comsA = list(set(partitionA.values()))
+    comsB = list(set(partitionB.values()))
+    
+    comsA.sort(key=natural_keys)
+    comsB.sort(key=natural_keys)
+    
+    Adict = {k: [] for k in comsA}
+    Bdict = {k: [] for k in comsB}
+    
+    for i in list(partitionA.keys()):
+        Adict[partitionA[i]].append(i)
+    
+    for i in list(partitionB.keys()):
+        Bdict[partitionB[i]].append(i)
+        
+    Akeys = list(Adict.keys())
+    
+    
+    max_jaccards = []
+    
+    for i in list(Bdict.keys()):
+        jaccards = []
+        for j in Akeys:
+            
+            a = len(set(Bdict[i]) & set(Adict[j]))
+            b = set(Bdict[i]).difference(set(Adict[j]))
+            c = set(Adict[j]).difference(set(Bdict[i]))
+            jaccard = a/(a+len(b)+len(c))
+            jaccards.append(jaccard)
+        
+        max_jaccards.append(max(jaccards))
+    
+    Jaccard = np.sum(max_jaccards)/len(list(Bdict.keys()))
+    
+    return Jaccard
 
 
 #------- Recall & Precision -------------
 
-comsA = set(partitionA.values())
-comsB = set(partitionB.values())
-
-def atoi(text):
-    return int(text) if text.isdigit() else text
-
-def natural_keys(text):
-   
-    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
-
-comsA = list(set(partitionA.values()))
-comsB = list(set(partitionB.values()))
-
-comsA.sort(key=natural_keys)
-comsB.sort(key=natural_keys)
-
-Adict = {k: [] for k in comsA}
-Bdict = {k: [] for k in comsB}
-
-for i in list(partitionA.keys()):
-    Adict[partitionA[i]].append(i)
-
-for i in list(partitionB.keys()):
-    Bdict[partitionB[i]].append(i)
+def recall_precision(partitionA,partitionB):
+    
+    comsA = set(partitionA.values())
+    comsB = set(partitionB.values())
     
     
-Akeys = list(Adict.keys())
-j = 0
-mo = 0
-for i in list(Bdict.keys()):
-    corrects = len(set(Bdict[i]) & set(Adict[Akeys[j]]))
-    mo = mo + corrects/len(set(Bdict[i]))
-    j = j + 1
-
-prec = mo/88
-
-Akeys = list(Adict.keys())
-j = 0
-mo = 0
-for i in list(Bdict.keys()):
-    corrects = len(set(Bdict[i]) & set(Adict[Akeys[j]]))
-    mo = mo + corrects/len(set(Adict[Akeys[j]]))
-    j = j + 1   
+    comsA = list(set(partitionA.values()))
+    comsB = list(set(partitionB.values()))
     
-rec = mo/88
+    comsA.sort(key=natural_keys)
+    comsB.sort(key=natural_keys)
+    
+    Adict = {k: [] for k in comsA}
+    Bdict = {k: [] for k in comsB}
+    
+    for i in list(partitionA.keys()):
+        Adict[partitionA[i]].append(i)
+    
+    for i in list(partitionB.keys()):
+        Bdict[partitionB[i]].append(i)
+    
+    Akeys = list(Adict.keys())
+    j = 0
+    mo = 0
+    for i in list(Bdict.keys()):
+        corrects = len(set(Bdict[i]) & set(Adict[Akeys[j]]))
+        mo = mo + corrects/len(set(Bdict[i]))
+        j = j + 1
+    
+    prec = mo/len(Akeys)
+    
+    Akeys = list(Adict.keys())
+    j = 0
+    mo = 0
+    for i in list(Bdict.keys()):
+        corrects = len(set(Bdict[i]) & set(Adict[Akeys[j]]))
+        mo = mo + corrects/len(set(Adict[Akeys[j]]))
+        j = j + 1   
+        
+    rec = mo/len(Akeys)
+    
+    return rec,prec
 
     
 """
 Pair-Precision & Pair-Recall 
 """
-Bkeys = list(Bdict.keys())   
-j = 0 
-total_common = 0
-for i in list(Adict.keys()):
-    num_common = len(set(Adict[i]) & set(Bdict[Bkeys[j]]))
-    total_common = num_common + total_common
-    j = j + 1
+def pair_recall_precision(partitionA,partitionB):
     
-total_common = math.floor(total_common/2)  
-cardA = 0
-for i in list(Adict.keys()):
-    cardA = cardA + math.floor(len(Adict[i])/2)
+    comsA = set(partitionA.values())
+    comsB = set(partitionB.values())
     
-cardB = 0
-for i in list(Bdict.keys()):
-    cardB = cardB + math.floor(len(Bdict[i])/2)
     
-precision = total_common/cardA
-recall = total_common/cardB
+    comsA = list(set(partitionA.values()))
+    comsB = list(set(partitionB.values()))
+    
+    comsA.sort(key=natural_keys)
+    comsB.sort(key=natural_keys)
+    
+    Adict = {k: [] for k in comsA}
+    Bdict = {k: [] for k in comsB}
+    
+    for i in list(partitionA.keys()):
+        Adict[partitionA[i]].append(i)
+    
+    for i in list(partitionB.keys()):
+        Bdict[partitionB[i]].append(i)
+    
+    Bkeys = list(Bdict.keys())   
+    j = 0 
+    total_common = 0
+    for i in list(Adict.keys()):
+        num_common = len(set(Adict[i]) & set(Bdict[Bkeys[j]]))
+        total_common = num_common + total_common
+        j = j + 1
+        
+    total_common = math.floor(total_common/2)  
+    cardA = 0
+    for i in list(Adict.keys()):
+        cardA = cardA + math.floor(len(Adict[i])/2)
+        
+    cardB = 0
+    for i in list(Bdict.keys()):
+        cardB = cardB + math.floor(len(Bdict[i])/2)
+        
+    precision = total_common/cardA
+    recall = total_common/cardB
+    return recall,precision
+    
 
 
+"""   
+    
+#----------Bar plots------------
+#Ground truth bar plot
+nums1 = [len(i) for i in Adict.values()]
+plt.bar(Akeys,nums1)
+
+# partition plot
+nums2 = [len(i) for i in Bdict.values()]
+plt.bar(Bkeys,nums2)
+
+"""
 
 
 
