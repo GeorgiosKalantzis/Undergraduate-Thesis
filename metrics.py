@@ -59,8 +59,9 @@ def atoi(text):
 def natural_keys(text):
     return [ atoi(c) for c in re.split(r'(\d+)', text) ]
 
-#----- Mojo Distance ---------
-
+"""
+ Mojo Distance 
+"""
 def mojo_distance(partitionA,partitionB):
     
     n = len(partitionB)
@@ -135,7 +136,9 @@ def mojo_distance(partitionA,partitionB):
     
     return MJ
 
-#--------- Jaccard -------------------
+"""
+ Jaccard 
+"""
 def jaccard_similarity(partitionA,partitionB):
     
     
@@ -159,29 +162,29 @@ def jaccard_similarity(partitionA,partitionB):
         Bdict[partitionB[i]].append(i)
         
     Akeys = list(Adict.keys())
-    
+    Bkeys = list(Bdict.keys())
     
     max_jaccards = []
     
-    for i in list(Bdict.keys()):
+    for i in list(Adict.keys()):
         jaccards = []
-        for j in Akeys:
+        for j in Bkeys:
             
-            a = len(set(Bdict[i]) & set(Adict[j]))
-            b = set(Bdict[i]).difference(set(Adict[j]))
-            c = set(Adict[j]).difference(set(Bdict[i]))
+            a = len(set(Bdict[j]) & set(Adict[i]))
+            b = set(Bdict[j]).difference(set(Adict[i]))
+            c = set(Adict[i]).difference(set(Bdict[j]))
             jaccard = a/(a+len(b)+len(c))
             jaccards.append(jaccard)
         
         max_jaccards.append(max(jaccards))
     
-    Jaccard = np.sum(max_jaccards)/len(list(Bdict.keys()))
+    Jaccard = np.sum(max_jaccards)/len(list(Adict.keys()))
     
     return Jaccard
 
-
-#------- Recall & Precision -------------
-
+"""
+ Recall & Precision 
+"""
 def recall_precision(partitionA,partitionB):
     
     comsA = set(partitionA.values())
@@ -271,20 +274,6 @@ def pair_recall_precision(partitionA,partitionB):
     recall = total_common/cardB
     return recall,precision
     
-
-
-"""   
-    
-#----------Bar plots------------
-#Ground truth bar plot
-nums1 = [len(i) for i in Adict.values()]
-plt.bar(Akeys,nums1)
-
-# partition plot
-nums2 = [len(i) for i in Bdict.values()]
-plt.bar(Bkeys,nums2)
-
-"""
 
 
 
