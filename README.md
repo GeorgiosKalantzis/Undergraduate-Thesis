@@ -1,2 +1,2 @@
-# Thesis
-Software Re-modularization with community detection techniques
+# Undergraduate Thesis
+Implementation of community detection techniques with software re-modularization data.
